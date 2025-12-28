@@ -59,6 +59,17 @@ docker/
 ```bash
 docker compose up -d
 ```
+To enter to the database
+docker exec -it mysql mysql -uroot -proot123 cloudninjas
+
+To list all items 
+mysql> SELECT * FROM items;
++----+--------+-------+
+| id | name   | price |
++----+--------+-------+
+|  1 | labtop |  5000 |
++----+--------+-------+
+1 row in set (0.00 sec)
 
 ---
 
