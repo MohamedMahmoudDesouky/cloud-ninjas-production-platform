@@ -19,7 +19,7 @@ services:
       - "6379:6379"
 
   database:
-    image: omaradel/cloud-database:v4
+    image: omaradel2001/db:v1.0
     container_name: cloud-db
     restart: always
     environment:
@@ -30,7 +30,7 @@ services:
       - mysql
 
   backend:
-    image: omaradel/cloud-backend:v1
+    image: omaradel2001/backend:v1.0
     container_name: cloud-backend
     restart: always
     environment:
@@ -43,7 +43,7 @@ services:
       - redis
 
   frontend:
-    image: cloud-frontend:v1
+    image: omaradel2001/cloud-frontend:v3
     container_name: cloud-frontend
     restart: always
     environment:
