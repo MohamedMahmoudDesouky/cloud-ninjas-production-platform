@@ -1,0 +1,21 @@
+
+{{- if .Values.mysql.persistence.pv.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-mysql-pv
+  labels:
+    app: mysql
+    release: {{ .Release.Name }}
+    {{- include "cloud-ninjas-prod.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | default "cloud-ninjas" }}
+spec:
+  capacity:
+    storage: {{ .Values.mysql.persistence.pv.size }}
+  accessModes:
+    - {{ .Values.mysql.persistence.pv.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.mysql.persistence.pv.reclaimPolicy }}
+  storageClassName: {{ .Values.mysql.persistence.pv.storageClassName | quote }}
+  hostPath:
+    path: {{ .Values.mysql.persistence.pv.hostPath }}
+{{- end }}
