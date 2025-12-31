@@ -35,6 +35,5 @@ spec:
           - |
             source /vault/secrets/backend-env.sh
             uvicorn main:app --host 0.0.0.0 --port 8000
-        # No env section needed — all from Vault
         ports:
         - containerPort: 8000

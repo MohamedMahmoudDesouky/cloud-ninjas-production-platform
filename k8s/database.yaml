@@ -24,7 +24,7 @@ spec:
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
           export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
           {{- end }}
-    spec:  # ← This is the POD spec — containers go HERE
+    spec: 
       serviceAccountName: backend-serviceaccount
       initContainers:
         - name: volume-permissions-fix
