@@ -35,5 +35,5 @@ jobs:
 
     - name: Build & Push Backend
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:v1.1 backend/
-        docker push ${{ secrets.DOCKER_USERNAME }}/backend:v1.1
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/backend:latest backend/
+        docker push ${{ secrets.DOCKER_USERNAME }}/backend:latest
