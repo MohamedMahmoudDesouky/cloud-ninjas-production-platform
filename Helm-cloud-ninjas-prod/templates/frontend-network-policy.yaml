@@ -1,0 +1,56 @@
+# frontend-network-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.networkPolicy.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Values.networkPolicy.frontendAppLabel }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx  # ← must match your ingress-nginx namespace name!
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx       # default label for ingress-nginx controller pods
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.frontendPort }}   # or your frontend’s containerPort
+---
+# frontend-network-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.networkPolicy.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Values.networkPolicy.frontendAppLabel }}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: {{ .Values.networkPolicy.backendAppLabel }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.backendPort }}  # or whatever port backend listens on
+
+
+
+        # - namespaceSelector:
+        #     matchLabels:
+        #       kubernetes.io/metadata.name: ingress-nginx   # ← adjust to your ingress NS
+        #   podSelector:
+        #     matchLabels:
+        #       app.kubernetes.io/name: ingress-nginx         # ← common label
+        # ports:
+        #   - protocol: TCP
+        #     port: 30080    # or whatever port frontend listens on (e.g., 3000, 8080)
