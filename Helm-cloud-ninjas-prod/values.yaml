@@ -113,3 +113,47 @@ roleBinding:
   name: cloud-ninjas-pod-reader
   namespace: cloud-ninjas
   
+  #HPA_Backend
+  namespace: cloud-ninjas
+
+hpa:
+  name: cloud-ninjas-backend-hpa
+  targetDeployment: backend
+
+  minReplicas: 2
+  maxReplicas: 5
+
+  cpu:
+    enabled: true
+    averageUtilization: 70
+
+  memory:
+    enabled: true
+    averageUtilization: 75
+
+ #ingress_Backend
+ 
+ingress:
+  name: backend-ingress
+  className: nginx
+
+  host: api.cloud-ninjas.example.com
+  path: /
+  pathType: Prefix
+
+  serviceName: backend
+  servicePort: 80
+ #Backend_natwork_policy
+networkPolicy:
+  name: backend-policy
+
+  backendAppLabel: backend
+  frontendAppLabel: frontend
+  databaseAppLabel: mysql
+
+  backendPort: 8000
+  databasePort: 3306
+
+  dns:
+    labelKey: k8s-app
+    labelValue: kube-dns
