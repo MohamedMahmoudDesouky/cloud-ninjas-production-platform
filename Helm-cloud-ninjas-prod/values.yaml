@@ -157,3 +157,41 @@ networkPolicy:
   dns:
     labelKey: k8s-app
     labelValue: kube-dns
+
+
+#frontend-ingress
+ingress:
+  name: front-ingress
+  className: nginx
+  host: frontend.cloud-ninjas.example.com
+  path: /
+  pathType: Prefix
+  tls:
+     - hosts:
+        frontend.cloud-ninjas.example.com
+    secretName: frontend-tls-secret
+
+service:
+  name: frontend
+  port: 80
+
+#frontend-network-policy-ingress
+name: allow-ingress-nginx-to-frontend
+
+app: frontend
+port: 8501
+
+NetworkPolicy-egress
+name: allow-ingress-to-frontend
+
+spec:
+app: frontend
+
+egress:
+app: backend
+port: 8000
+
+
+#front-tls-secret
+name: frontend-tls-secret
+
