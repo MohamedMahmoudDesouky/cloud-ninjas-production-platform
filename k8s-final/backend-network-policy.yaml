@@ -1,0 +1,46 @@
+# backend-network-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-policy
+  namespace: cloud-ninjas
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+    - Egress
+
+  # 🔽 INGRESS: Who can connect TO the backend?
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8000   # ← backend service port
+
+  # 🔼 EGRESS: Who can the backend connect TO?
+  egress:
+    # Allow backend to talk to database on its service port
+    - to:
+        - podSelector:
+            matchLabels:
+              app: mysql
+      ports:
+        - protocol: TCP
+          port: 3306   # ← MySQL; use 3306 for MySQL, etc.
+
+    # Optional: Allow DNS lookups (required if using service names)
+    - to:
+        - namespaceSelector: {}  # or more restricted: kube-system with kube-dns label
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns   # adjust based on your cluster (e.g., "dns" in some distros)
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

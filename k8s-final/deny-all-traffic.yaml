@@ -1,0 +1,11 @@
+# default-deny-traffic.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: cloud-ninjas
+spec:
+  podSelector: {}  # ← applies to ALL pods in namespace
+  policyTypes:
+  - Ingress
+  - Egress
