@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: {{ .Values.frontendIngress.sslRedirect | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - hosts:
+        - {{ .Values.frontendIngress.host }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  rules:
+    - host: {{ .Values.frontendIngress.host }}
+      http:
+        paths:
+          - path: {{ .Values.frontendIngress.path }}
+            pathType: {{ .Values.frontendIngress.pathType }}
+            backend:
+              service:
+                name: {{ .Values.frontendIngress.serviceName }}
+                port:
+                  number: {{ .Values.frontendIngress.servicePort }}

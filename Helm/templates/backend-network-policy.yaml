@@ -1,0 +1,44 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-policy
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.backendPort }}
+
+  egress:
+    # Allow backend → MySQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: mysql
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.mysqlPort }}
+
+    # Allow DNS (required for service discovery)
+    - to:
+        - namespaceSelector:
+            matchLabels: {}
+        - podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.dnsLabelKey }}: {{ .Values.networkPolicy.dnsLabelValue  }}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

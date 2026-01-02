@@ -1,0 +1,58 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.redis.replicas }}
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        imagePullPolicy: {{ .Values.redis.image.pullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: {{ .Values.redis.containerPort }}
+        resources:
+          requests:
+            cpu: {{ .Values.redis.resources.requests.cpu }}
+            memory: {{ .Values.redis.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.redis.resources.limits.cpu }}
+            memory: {{ .Values.redis.resources.limits.memory }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.redis.containerPort }}
+          initialDelaySeconds: {{ .Values.redis.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.redis.probes.liveness.periodSeconds }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.redis.containerPort }}
+          initialDelaySeconds: {{ .Values.redis.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.redis.probes.readiness.periodSeconds }}
+        args:
+        - --save ""
+        - --appendonly no
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: {{ .Values.redis.servicePort }}
+      targetPort: {{ .Values.redis.containerPort }}
+  type: {{ .Values.redis.serviceType }}
+
+       

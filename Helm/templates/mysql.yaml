@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: {{ .Values.mysql.serviceName }}
+  replicas: {{ .Values.mysql.replicas }}
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+        imagePullPolicy: {{ .Values.mysql.image.pullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: {{ .Values.mysql.containerPort }}
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.secretName }}
+              key: DB_PASS
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.secretName }}
+              key: DB_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.secretName }}
+              key: DB_PASS
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.secretName }}
+              key: DB_NAME
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "mysqladmin shutdown -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+        resources:
+          requests:
+            cpu: {{ .Values.mysql.resources.requests.cpu }}
+            memory: {{ .Values.mysql.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.mysql.resources.limits.cpu }}
+            memory: {{ .Values.mysql.resources.limits.memory }}
+
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.mysql.containerPort }}
+          initialDelaySeconds: {{ .Values.mysql.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mysql.probes.liveness.periodSeconds }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.mysql.containerPort }}
+          initialDelaySeconds: {{ .Values.mysql.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mysql.probes.readiness.periodSeconds }}
+
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.mysql.pvc.name }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.mysql.pvc.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - {{ .Values.mysql.pvc.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.mysql.pvc.storage }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mysql.serviceName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: mysql
+  ports:
+    - port: {{ .Values.mysql.containerPort }}
+      targetPort: {{ .Values.mysql.containerPort }}
+      name: mysql          

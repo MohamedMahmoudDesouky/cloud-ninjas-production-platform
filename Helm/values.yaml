@@ -1,0 +1,248 @@
+# Namespace (kept top-level for simplicity)
+namespace: cloud-ninjas
+
+# Deployment
+backend:
+    # Ports
+  containerPort: 8000
+  servicePort: 80
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    cpuUtilization: 70
+    memoryUtilization: 75
+  replicas: 2
+  image:
+    repository: selconyt/backend
+    tag: v1.1
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Secret name (assumed to exist externally)
+  secretName: backend-secret
+
+
+
+  # Service
+  serviceType: ClusterIP
+
+
+# --- Frontend (new)
+frontend:
+  replicas: 1
+  containerPort: 8501
+  servicePort: 80
+  serviceType: ClusterIP  # or NodePort/LoadBalancer if needed later
+
+  image:
+    repository: omaradel2001/frontend
+    tag: v1.0
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    cpuUtilization: 70
+    memoryUtilization: 75
+
+  # External backend URL (e.g., for API calls from frontend)
+  backendUrl: "http://backend:80"
+
+# ... previous backend & frontend sections ...
+
+# --- MySQL (new)
+mysql:
+  replicas: 1
+  containerPort: 3306
+  serviceName: mysql  # used for StatefulSet serviceName + headless Service name
+  secretName: db-secret  # ← must exist in namespace (like backend-secret)
+  pvc:
+    name: mysql-pvc
+    storage: 10Gi
+    accessMode: ReadWriteOnce
+  image:
+    repository: mysql
+    tag: 8.0.44
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  probes:
+    enabled: true
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 5
+  pv:
+    enabled: false  # ← disable by default (unsafe for prod)
+    name: mysql-pv
+    storage: 10Gi
+    accessMode: ReadWriteOnce
+    reclaimPolicy: Retain
+    storageClassName: ""  # empty string to match PVC without storageClassName
+    hostPath: /mnt/data/mysql  # only used if pv.enabled=true
+
+# ... previous sections ...
+
+ingress:
+  enabled: false  # ← set to true when you want to deploy it
+  className: nginx
+  host: api.cloud-ninjas.example.com
+  serviceName: backend
+  servicePort: 80
+  path: /
+  pathType: Prefix
+    
+  tls:
+    enabled: false  # ← set to true to enable TLS
+    secretName: frontend-tls-secret  # must exist in namespace
+
+
+# ... previous sections ...
+
+networkPolicy:
+  enabled: false  # ← set to true to enforce
+  backendPort: 8000
+  mysqlPort: 3306
+  dnsNamespace: kube-system
+  dnsLabelKey: k8s-app
+  dnsLabelValue: kube-dns
+  defaultDeny: false
+  frontendIngressPort: 8501
+  ingressNamespace: ingress-nginx            # ← adjust if your ingress is in another NS (e.g., 'nginx-ingress')
+  ingressPodLabelKey: app.kubernetes.io/name
+  ingressPodLabelValue: ingress-nginx
+  frontendEgressTargetApp: backend
+  backendServicePort: 8000
+# ... previous sections ...
+
+
+
+backendSecret:
+  DB_HOST: mysql
+  DB_USER: cloudninjas
+  DB_PASS: root123
+  DB_NAME: cloudninjas
+  REDIS_HOST: redis
+
+
+
+
+dbSecret:
+  DB_USER: cloudninjas
+  DB_PASS: root123
+  DB_NAME: cloudninjas
+
+
+
+
+
+
+
+
+# Frontend ingress (new)frontendIngress:
+frontendIngress:
+  enabled: false
+  host: frontend.cloud-ninjas.example.com
+  serviceName: frontend
+  servicePort: 80
+  path: /
+  pathType: Prefix
+  sslRedirect: true  # controls nginx.ingress.kubernetes.io/ssl-redirect
+
+  
+
+
+
+
+
+
+
+
+
+# ... existing config ...
+
+redis:
+  enabled: true  # ← set to false to disable Redis
+  replicas: 1
+  containerPort: 6379
+  servicePort: 6379
+  serviceType: ClusterIP
+
+  image:
+    repository: redis
+    tag: "7"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  probes:
+    enabled: true
+    liveness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 5
+
+  # Cache-optimized: disable persistence
+  disablePersistence: true
+
+
+
+
+resourceQuota:
+  enabled: false
+  requests:
+    cpu: "2"
+    memory: 3Gi
+  limits:
+    cpu: "4"
+    memory: 4Gi
+
+# ... existing config ...
+
+rbac:
+  enabled: false  # ← set to true only if your app needs Kubernetes API access
+  serviceAccount:
+    create: true
+    name: cloud-ninjas-sa
+  role:
+    name: cloud-ninjas-pod-reader
+    rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list"]
+
+
+
+ 
+

@@ -1,0 +1,753 @@
+---
+# Source: cloud-ninjas-project/templates/backend-network-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-policy
+  namespace: cloud-ninjas
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+
+  egress:
+    # Allow backend → MySQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: mysql
+      ports:
+        - protocol: TCP
+          port: 3306
+
+    # Allow DNS (required for service discovery)
+    - to:
+        - namespaceSelector:
+            matchLabels: {}
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Source: cloud-ninjas-project/templates/database-network-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-db
+  namespace: cloud-ninjas
+spec:
+  podSelector:
+    matchLabels:
+      app: mysql
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: 
+      ports:
+        - protocol: TCP
+          port: 3306
+---
+# Source: cloud-ninjas-project/templates/deny-all-traffic.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: cloud-ninjas
+spec:
+  podSelector: {}  # applies to all pods in namespace
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Source: cloud-ninjas-project/templates/frontend-network-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-nginx-to-frontend
+  namespace: cloud-ninjas
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "ingress-nginx"
+      ports:
+        - protocol: TCP
+          port: 8501
+---
+# Source: cloud-ninjas-project/templates/resource-quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cloud-ninjas-resource-quota
+  namespace: cloud-ninjas
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: "3Gi"
+    limits.cpu: "4"
+    limits.memory: "4Gi"
+---
+# Source: cloud-ninjas-project/templates/ServiceAccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloud-ninjas-sa
+  namespace: cloud-ninjas
+---
+# Source: cloud-ninjas-project/templates/backend-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secret
+  namespace: cloud-ninjas
+type: Opaque
+data:
+  DB_HOST: bXlzcWw=
+  DB_USER: Y2xvdWRuaW5qYXM=
+  DB_PASS: cm9vdDEyMw==
+  DB_NAME: Y2xvdWRuaW5qYXM=
+  REDIS_HOST: cmVkaXM=
+---
+# Source: cloud-ninjas-project/templates/frontend-tls-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: frontend-tls-secret
+  namespace: cloud-ninjas
+type: kubernetes.io/tls
+stringData:
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDaDCCAlCgAwIBAgIUGobyqbGF1amcgKdXWvekqMdOPZIwDQYJKoZIhvcNAQEL
+    BQAwLDEqMCgGA1UEAwwhZnJvbnRlbmQuY2xvdWQtbmluamFzLmV4YW1wbGUuY29t
+    MB4XDTI1MTIzMTExNDgyMFoXDTI2MTIzMTExNDgyMFowLDEqMCgGA1UEAwwhZnJv
+    bnRlbmQuY2xvdWQtbmluamFzLmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEF
+    AAOCAQ8AMIIBCgKCAQEAyBIyiuafPtcQLLdnnhopThuevkmdyA4vITLomV/ZmZit
+    xiQL0tPflp9xuHyP0AEiJ/9HUlMO/Nt2ceRX04Gm2VCiyLcX0Qnxy1zV91ORfBCg
+    Xv71WPAzk1QrQztWffaJ/3s2ytWK3+OgfKmfsUEQC3McMKEjJFIyF1lRMA8DbNg3
+    liMY/FrYMB8nVoFUr1iBzD4QeS1+gGsTF2GKhIjdqnnzxSvJlnfzHew4q5RW23m1
+    9wguad55QTWAdPUitfEPxUvLj1o2Ti1Ypooryn2w6FX/8+6bb75pUuWOsTbKxacH
+    nqG1cmPttpX1c/Gcs3W9JSInTC+mWb9WrPq28R27ZwIDAQABo4GBMH8wHQYDVR0O
+    BBYEFG+VNa7ViTZGM3NSgxjSYXeO7UVLMB8GA1UdIwQYMBaAFG+VNa7ViTZGM3NS
+    gxjSYXeO7UVLMA8GA1UdEwEB/wQFMAMBAf8wLAYDVR0RBCUwI4IhZnJvbnRlbmQu
+    Y2xvdWQtbmluamFzLmV4YW1wbGUuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQCp9Vcd
+    xKtQC6BaKXp3Egt1uL8/p/hHEvBeumVCZbo7Y8JcLj0iDqwTFJ2Nze3a3IE/O3pj
+    PakFe1p+QFjSxQSW71dHZSPUDmh6Hq3zZoxRO+UyYclGNnMl7o7u48vg/xUsM2Sv
+    6r6joRIjIWaZjN0KARvr7HhMYR+ylsXQldlDoKLXsTf1T0k6n/hkqV+kBjukZzQ/
+    sCPnsuC9/cvmQNzNSS3DtJLPM2p/sRRfM1sk3f4Zg8+tloaErPZrqbkP4kvbZRpE
+    Apysh+ouVd/hPx6OJQp/NUP9JDrwLwUAyyhY73DH2648MQa+DxQVw2RwesE8+jZq
+    +61z8WGTU//kktHQ
+    -----END CERTIFICATE-----
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDIEjKK5p8+1xAs
+    t2eeGilOG56+SZ3IDi8hMuiZX9mZmK3GJAvS09+Wn3G4fI/QASIn/0dSUw7823Zx
+    5FfTgabZUKLItxfRCfHLXNX3U5F8EKBe/vVY8DOTVCtDO1Z99on/ezbK1Yrf46B8
+    qZ+xQRALcxwwoSMkUjIXWVEwDwNs2DeWIxj8WtgwHydWgVSvWIHMPhB5LX6AaxMX
+    YYqEiN2qefPFK8mWd/Md7DirlFbbebX3CC5p3nlBNYB09SK18Q/FS8uPWjZOLVim
+    iivKfbDoVf/z7ptvvmlS5Y6xNsrFpweeobVyY+22lfVz8Zyzdb0lIidML6ZZv1as
+    +rbxHbtnAgMBAAECggEANLyvO/PciBjyd4cEtiUZPDCFoI0RHRm4DJ05uKwOVLFt
+    JOx9fV5B8pcmx8V1txOFaFue9jFUowxKZW0WRXdIfsIFlrjEe2KOrNdUwzPxBm3v
+    h/rWu1Hdlnk6SieK/fsNlx1obQDq8Wcz94hSwstuqkX2aU8gT0OnVoZBo1Rhx7+j
+    UQhqFglq5FQbq2istJEZUlgUQkTTIkT+rEww/2hkES3szFVAfofGXD7WsmVQRvnQ
+    in/mt86wFaP7cBoC2mBnWTdgaIUNY0bYVuNf5WT/0E7Hsy7MTUpvXi4SeNxdHMa0
+    vuZ9jNL7qjaVu4fQFOzsCTVe0AoPFlxJ0c6x55oNWQKBgQDbZOQj9YHdrC6yJ1kU
+    q4TMsD9tQ+o2qzfZw1Jx6YlSnHPTDucufwIxOaUQHDU4k2NfhTKygXl+tAjx5s0s
+    OF8lVIpBCv3aHGVMeCoGjmHgqWFh9MPFWDS8/zRhCDOj5ovdJHgQrJDSoPc22TRE
+    KTy4Ow3zquQ7c83LPepGmnq7qwKBgQDpc/NgwUOxJleCg4RsVda7cgN9QE1DQJec
+    ASIelWBCq3oeAtZp3aWM9SOfgm8v4eSzakE7ASLm5X6yrtrvD3XSpYfqR5SwXLGw
+    9W4UH0WwbLzeGs/5I0dGGHu3WHF6/1rsvyRgTcgxErY7zzDwy5b5DqGxtHUlcx6b
+    XOsCkaWjNQKBgETMG3pnN0UTBEWbbyS7MFabghg6bsyb3lSsGkNcT1KXev6ZMsdy
+    znYvNGKb5diK52OBukcdsMKZpCBvFrGiL7veCcihsL7fnqhfGhaaOXkgxEfaYDWX
+    FlqZ0IwI7WCdIAjFsdzQsE1MaplJfUlOgRrocdSSJyW5h7QPA1MGiCwnAoGAaNAW
+    RSqAKdj9ESvbGIixkBbwWhu0lK07ZF9d4j1OqqAyg6bifUV2PoMRK1x0bxsMg0EB
+    aGxqLyB6cd7vjMV0MM8A5r6ck1IKtVh7w60GrNvMY26g83S46dyYaoGbmuTTSWoM
+    tgstbRSDyU1KMECgYBHeD+Nk7lGpOjKNRP8RN64Wfj8Q0u0fJDzHKxZDSwckLzt0
+    AEGsGLDstjgBkC/R6fyxWOLhjsjMtu64OOtzWtDIBJohkZWv9P7h25c+UpOTSaGb
+    eA28waWOlvHR8XuK8uLKqV+rkS6M9y58kWsFwaRrHw5ufveOIocNOqU4D+XLw==
+    -----END PRIVATE KEY-----
+---
+# Source: cloud-ninjas-project/templates/database.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: cloud-ninjas
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: cloud-ninjas-project/templates/pv.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: cloud-ninjas
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: ""
+---
+# Source: cloud-ninjas-project/templates/role.yaml
+# role-dev.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: cloud-ninjas
+  name: cloud-ninjas-pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+# Source: cloud-ninjas-project/templates/role-bind.yaml
+# rolebinding-app.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-pod-reader
+  namespace: cloud-ninjas
+subjects:
+- kind: ServiceAccount
+  name: cloud-ninjas-sa      # ← Your app's service account
+  namespace: cloud-ninjas
+roleRef:
+  kind: Role
+  name: cloud-ninjas-pod-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: cloud-ninjas-project/templates/backend.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: cloud-ninjas
+spec:
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+---
+# Source: cloud-ninjas-project/templates/database.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: cloud-ninjas
+spec:
+  clusterIP: None
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+---
+# Source: cloud-ninjas-project/templates/frontend.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: cloud-ninjas
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8501
+  type: ClusterIP
+---
+# Source: cloud-ninjas-project/templates/redis.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: cloud-ninjas
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP
+---
+# Source: cloud-ninjas-project/templates/backend.yaml
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: backend
+#   namespace: cloud-ninjas
+# spec:
+#   replicas: 2
+#   selector:
+#     matchLabels:
+#       app: backend
+#   template:
+#     metadata:
+#       labels:
+#         app: backend
+#     spec:
+#       containers:
+#       - name: backend
+#         image: selconyt/backend:v1.1  # تأكد من وجود cryptography
+#         resources:
+#           requests:
+#             cpu: 250m
+#             memory: 256Mi
+#           limits:
+#             cpu: 500m
+#             memory: 512Mi
+#         env:
+#         - name: DB_HOST
+#           valueFrom:
+#             secretKeyRef:
+#               name: backend-secret
+#               key: DB_HOST
+#         - name: DB_USER
+#           valueFrom:
+#             secretKeyRef:
+#               name: backend-secret
+#               key: DB_USER
+#         - name: DB_PASS
+#           valueFrom:
+#             secretKeyRef:
+#               name: backend-secret
+#               key: DB_PASS
+#         - name: DB_NAME
+#           valueFrom:
+#             secretKeyRef:
+#               name: backend-secret
+#               key: DB_NAME
+#         - name: REDIS_HOST
+#           valueFrom:
+#             secretKeyRef:
+#               name: backend-secret
+#               key: REDIS_HOST
+#         ports:
+#         - containerPort: 8000
+
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: backend
+#   namespace: cloud-ninjas
+# spec:
+#   selector:
+#     app: backend
+#   ports:
+#     - name: http  
+#       port: 80
+#       targetPort: 8000
+#   type: ClusterIP  # or NodePort if you need external access
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: cloud-ninjas
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: "selconyt/backend:v1.1"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_HOST
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_USER
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_PASS
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_NAME
+        - name: REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: REDIS_HOST
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+# Source: cloud-ninjas-project/templates/frontend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: cloud-ninjas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "omaradel2001/frontend:v1.0"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8501
+        env:
+        - name: BACKEND_URL
+          value: "http://api.cloud-ninjas.example.com"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+# Source: cloud-ninjas-project/templates/redis.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: cloud-ninjas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: "redis:7"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        args:
+        - --save ""
+        - --appendonly no
+---
+# Source: cloud-ninjas-project/templates/backend-hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloud-ninjas-backend-hpa
+  namespace: cloud-ninjas
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+---
+# Source: cloud-ninjas-project/templates/frontend-hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: cloud-ninjas
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+---
+# Source: cloud-ninjas-project/templates/database.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: cloud-ninjas
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: "mysql:8.0.44"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_PASS
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_PASS
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_NAME
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "mysqladmin shutdown -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+---
+# Source: cloud-ninjas-project/templates/mysql.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: cloud-ninjas
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: "mysql:8.0.44"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_PASS
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_PASS
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_NAME
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "mysqladmin shutdown -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+---
+# Source: cloud-ninjas-project/templates/backend-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: backend-ingress
+  namespace: cloud-ninjas
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.cloud-ninjas.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 80
+---
+# Source: cloud-ninjas-project/templates/frontend-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  namespace: cloud-ninjas
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - frontend.cloud-ninjas.example.com
+      secretName: frontend-tls-secret
+  rules:
+    - host: frontend.cloud-ninjas.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
