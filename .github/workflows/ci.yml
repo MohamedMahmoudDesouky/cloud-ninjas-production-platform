@@ -100,27 +100,42 @@ jobs:
       - name: Deploy and test
         run: |
           kubectl create namespace cloud-ninjas
-          kubectl apply -f k8s-final/
-          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=180s
-          MINIKUBE_IP=$(minikube ip)
-          # فتح port-forward في الخلفية
-          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
-          PORT_FORWARD_PID=$!
-
-          # انتظر قليلاً
-          sleep 5
-
-          # اختبر
-          if curl -f http://localhost:8000; then
+          kubectl delete resourcequota cloud-ninjas-resource-quota -n cloud-ninjas 2>/dev/null || true
+      
+          # فعّل storage provisioner في minikube (إذا لم يكن مفعلًا)
+          minikube addons enable storage-provisioner || true
+          minikube addons enable default-storageclass || true
+      
+          kubectl apply -f k8s-final/ -n cloud-ninjas
+      
+          # انتظر حتى يبدأ mysql-0 (حتى لو لم يصبح Ready)
+          echo "Waiting for mysql-0 to start..."
+          timeout 180s bash -c 'while ! kubectl get pod mysql-0 -n cloud-ninjas >/dev/null 2>&1; do sleep 2; done'
+          kubectl wait --for=jsonpath='{.status.phase}'=Running pod/mysql-0 -n cloud-ninjas --timeout=120s || true
+      
+          echo "Waiting for backend pods to start..."
+          kubectl wait --for=jsonpath='{.status.phase}'=Running pod -l app=backend -n cloud-ninjas --timeout=120s || true
+      
+          # جرّب اختبار واحد (حتى لو backend crash، نأخذ logs)
+          echo "Running smoke test..."
+          if kubectl run smoke-test \
+              --image=curlimages/curl \
+              -n cloud-ninjas \
+              -l app=frontend \
+              --restart=Never \
+              --requests="cpu=10m,memory=16Mi" \
+              --limits="cpu=50m,memory=32Mi" \
+              --quiet \
+              -i --rm -- \
+              curl -f -s http://backend:80; then
             echo "✅ Smoke test passed"
           else
-            echo "❌ Smoke test failed"
-            kill $PORT_FORWARD_PID 2>/dev/null
+            echo "❌ Smoke test failed — collecting diagnostics"
+            kubectl get pods -n cloud-ninjas
+            kubectl describe pvc mysql-pvc -n cloud-ninjas
+            kubectl logs -n cloud-ninjas -l app=backend --tail=30 --previous || kubectl logs -n cloud-ninjas -l app=backend --tail=30
             exit 1
           fi
-
-          # أنهِ port-forward
-          kill $PORT_FORWARD_PID 2>/dev/null
 
 
   cis-benchmark:
