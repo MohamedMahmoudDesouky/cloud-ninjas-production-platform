@@ -81,3 +81,46 @@ jobs:
           context: ${{ matrix.service.context }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+
+
+
+  smoke-test:
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+      - name: Start Minikube
+        run: |
+          sudo apt-get update && sudo apt-get install -y conntrack
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=docker
+      - name: Deploy and test
+        run: |
+          kubectl apply -f k8s-final/
+          kubectl wait --for=condition=available deployment/backend --timeout=120s
+          MINIKUBE_IP=$(minikube ip)
+          if curl -f "http://$MINIKUBE_IP/health"; then
+            echo "✅ Smoke test passed"
+          else
+            echo "❌ Smoke test failed"
+            exit 1
+          fi
+
+  cis-benchmark:
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install kubectl & Minikube
+        run: |
+          sudo apt-get update && sudo apt-get install -y conntrack
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=docker
+      - name: Run kube-bench
+        run: |
+          curl -L https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_$(uname -s)_$(uname -m).tar.gz | tar zx
+          sudo ./kube-bench run --targets node
+        continue-on-error: true
