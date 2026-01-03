@@ -99,6 +99,7 @@ jobs:
           minikube start --driver=docker
       - name: Deploy and test
         run: |
+          kunectl create namespace cloud-ninjas
           kubectl apply -f k8s-final/
           kubectl wait --for=condition=available deployment/backend --timeout=120s
           MINIKUBE_IP=$(minikube ip)
