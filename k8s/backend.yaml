@@ -29,7 +29,7 @@ spec:
       serviceAccountName: backend-serviceaccount
       containers:
       - name: backend
-        image: selconyt/backend:v1.0
+        image: selconyt/backend:89
         command: ["/bin/sh", "-c"]
         args:
           - |
