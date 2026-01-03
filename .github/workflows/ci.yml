@@ -67,7 +67,9 @@ jobs:
         with:
           context: ${{ matrix.service.context }}
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: selconyt/backend:${{ github.run_number }}
+
+          #tags: ${{ steps.meta.outputs.tags }}
 
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
@@ -131,3 +133,27 @@ jobs:
           curl -L https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_$(uname -s)_$(uname -m).tar.gz | tar zx
           sudo ./kube-bench run --targets node
         continue-on-error: true
+
+
+
+  cd-argocd:
+    needs: cis-benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Update K8s Manifests
+        run: |
+          git clone https://${{ secrets.GIT_USER }}:${{ secrets.GIT_TOKEN }}@github.com/MohamedMahmoudDesouky/cloud-ninjas-production-platform.git
+          cd cloud-ninjas-production-platform/k8s
+
+          sed -i "s|selconyt/backend:.*|selconyt/backend:${{ github.run_number }}|g" backend.yaml
+
+          git config --global user.email "ci@github.com"
+          git config --global user.name "github-actions"
+          git add .
+          git commit -m "Update backend image to ${{ github.run_number }}"
+          git push
+
