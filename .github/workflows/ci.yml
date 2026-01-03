@@ -67,7 +67,7 @@ jobs:
         with:
           context: ${{ matrix.service.context }}
           load: true
-          tags: selconyt/backend:${{ github.run_number }}
+          tags: selconyt/be:${{ github.run_number }}
 
           #tags: ${{ steps.meta.outputs.tags }}
 
@@ -75,7 +75,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
-          tags: selconyt/backend:${{ github.run_number }}
+          tags: selconyt/be:${{ github.run_number }}
 
       - name: Push image
         uses: docker/build-push-action@v6
@@ -84,7 +84,6 @@ jobs:
           push: true
           tags: |
             ${{ matrix.service.image }}:${{ github.run_number }}
-            ${{ matrix.service.image }}:latest
 
 
 
@@ -152,8 +151,8 @@ jobs:
         run: |
           cd k8s-final
 
-          sed -i "s|selconyt/backend:.*|selconyt/backend:${{ github.run_number }}|g" backend.yaml
-          sed -i "s|selconyt/frontend:.*|selconyt/frontend:${{ github.run_number }}|g" frontend.yaml
+          sed -i "s|selconyt/be:.*|selconyt/be:${{ github.run_number }}|g" backend.yaml
+          sed -i "s|selconyt/fe:.*|selconyt/fe:${{ github.run_number }}|g" frontend.yaml
 
           git config user.email "ci@github.com"
           git config user.name "github-actions"
