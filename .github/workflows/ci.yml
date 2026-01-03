@@ -107,25 +107,25 @@ jobs:
       
           echo "Running smoke test..."
           cat <<EOF | kubectl apply -f -
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: smoke-test
-        namespace: cloud-ninjas
-      spec:
-        containers:
-        - name: curl
-          image: curlimages/curl
-          resources:
-            requests:
-              cpu: "10m"
-              memory: "16Mi"
-            limits:
-              cpu: "50m"
-              memory: "32Mi"
-          command: ["curl", "-f", "-s", "http://backend:80"]
-        restartPolicy: Never
-      EOF
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: smoke-test
+            namespace: cloud-ninjas
+          spec:
+            containers:
+            - name: curl
+              image: curlimages/curl
+              resources:
+                requests:
+                  cpu: "10m"
+                  memory: "16Mi"
+                limits:
+                  cpu: "50m"
+                  memory: "32Mi"
+              command: ["curl", "-f", "-s", "http://backend:80"]
+            restartPolicy: Never
+          EOF
       
           kubectl wait --for=condition=Succeeded pod/smoke-test -n cloud-ninjas --timeout=60s
           kubectl logs smoke-test -n cloud-ninjas
