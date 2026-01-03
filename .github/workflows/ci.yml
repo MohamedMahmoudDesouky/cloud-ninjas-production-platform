@@ -100,34 +100,28 @@ jobs:
       - name: Deploy and test
         run: |
           kubectl create namespace cloud-ninjas
-      
-          # عطّل ResourceQuota مؤقتًا (لتسهيل CI)
-          kubectl delete resourcequota cloud-ninjas-resource-quota -n cloud-ninjas 2>/dev/null || true
-      
-          kubectl apply -f k8s-final/ -n cloud-ninjas
-      
-          # انتظر حتى يصبح MySQL جاهزًا (حتى لو backend ينتهي أولاً)
-          kubectl wait --for=condition=ready pod -l app=mysql -n cloud-ninjas --timeout=180s || true
-      
-          # انتظر backend
-          kubectl wait --for=condition=ready pod -l app=backend -n cloud-ninjas --timeout=120s
-      
-          # اختبر داخليًا مع موارد محددة
-          if kubectl run smoke-test \
-              --image=curlimages/curl \
-              -n cloud-ninjas \
-              -l app=frontend \
-              --restart=Never \
-              --requests="cpu=10m,memory=16Mi" \
-              --limits="cpu=50m,memory=32Mi" \
-              -i --rm -- \
-              curl -f http://backend:80; then
+          kubectl apply -f k8s-final/
+          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=180s
+          MINIKUBE_IP=$(minikube ip)
+          # فتح port-forward في الخلفية
+          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
+          PORT_FORWARD_PID=$!
+
+          # انتظر قليلاً
+          sleep 5
+
+          # اختبر
+          if curl -f http://localhost:8000; then
             echo "✅ Smoke test passed"
           else
             echo "❌ Smoke test failed"
-            kubectl logs -n cloud-ninjas -l app=backend --tail=30
+            kill $PORT_FORWARD_PID 2>/dev/null
             exit 1
           fi
+
+          # أنهِ port-forward
+          kill $PORT_FORWARD_PID 2>/dev/null
+
 
   cis-benchmark:
     needs: smoke-test
