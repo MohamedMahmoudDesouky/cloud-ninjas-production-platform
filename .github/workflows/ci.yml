@@ -97,45 +97,40 @@ jobs:
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
           minikube start --driver=docker
-      - name: Deploy and test
+      - name: Smoke test
         run: |
-          kubectl create namespace cloud-ninjas
-          kubectl delete resourcequota cloud-ninjas-resource-quota -n cloud-ninjas 2>/dev/null || true
-      
-          # فعّل storage provisioner في minikube (إذا لم يكن مفعلًا)
-          minikube addons enable storage-provisioner || true
-          minikube addons enable default-storageclass || true
-      
-          kubectl apply -f k8s-final/ -n cloud-ninjas
-      
-          # انتظر حتى يبدأ mysql-0 (حتى لو لم يصبح Ready)
           echo "Waiting for mysql-0 to start..."
-          timeout 180s bash -c 'while ! kubectl get pod mysql-0 -n cloud-ninjas >/dev/null 2>&1; do sleep 2; done'
-          kubectl wait --for=jsonpath='{.status.phase}'=Running pod/mysql-0 -n cloud-ninjas --timeout=120s || true
+          kubectl wait pod/mysql-0 -n cloud-ninjas --for=condition=Ready --timeout=120s
       
           echo "Waiting for backend pods to start..."
-          kubectl wait --for=jsonpath='{.status.phase}'=Running pod -l app=backend -n cloud-ninjas --timeout=120s || true
+          kubectl wait pod -l app=backend -n cloud-ninjas --for=condition=Ready --timeout=120s
       
-          # جرّب اختبار واحد (حتى لو backend crash، نأخذ logs)
           echo "Running smoke test..."
-          if kubectl run smoke-test \
-              --image=curlimages/curl \
-              -n cloud-ninjas \
-              -l app=frontend \
-              --restart=Never \
-              --requests="cpu=10m,memory=16Mi" \
-              --limits="cpu=50m,memory=32Mi" \
-              --quiet \
-              -i --rm -- \
-              curl -f -s http://backend:80; then
-            echo "✅ Smoke test passed"
-          else
-            echo "❌ Smoke test failed — collecting diagnostics"
-            kubectl get pods -n cloud-ninjas
-            kubectl describe pvc mysql-pvc -n cloud-ninjas
-            kubectl logs -n cloud-ninjas -l app=backend --tail=30 --previous || kubectl logs -n cloud-ninjas -l app=backend --tail=30
-            exit 1
-          fi
+          cat <<EOF | kubectl apply -f -
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: smoke-test
+        namespace: cloud-ninjas
+      spec:
+        containers:
+        - name: curl
+          image: curlimages/curl
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"
+          command: ["curl", "-f", "-s", "http://backend:80"]
+        restartPolicy: Never
+      EOF
+      
+          kubectl wait --for=condition=Succeeded pod/smoke-test -n cloud-ninjas --timeout=60s
+          kubectl logs smoke-test -n cloud-ninjas
+          kubectl delete pod smoke-test -n cloud-ninjas
+
 
 
   cis-benchmark:
