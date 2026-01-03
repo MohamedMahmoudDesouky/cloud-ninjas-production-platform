@@ -1,4 +1,4 @@
- name: Professional CI Pipeline (SonarCloud + Trivy + Smoke + CIS)
+name: Professional CI Pipeline (SonarCloud + Trivy + Smoke + CIS)
 
 on:
   push:
