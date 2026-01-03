@@ -51,7 +51,7 @@ You can deploy the platform in **two ways**:
 helm install cloud-ninjas ./Helm --namespace cloud-ninjas --create-namespace
 ```
 
-### 2. ✅ **Vanilla Kubernetes Manifests**
+### 2. ✅ **Kubernetes Manifests**
 - Static YAML files for transparency and simplicity
 - Located in [`/k8s-final`](./k8s-final)
 - Ideal for learning or non-Helm environments
