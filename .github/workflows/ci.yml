@@ -82,7 +82,10 @@ jobs:
         with:
           context: ${{ matrix.service.context }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ matrix.service.image }}:${{ github.run_number }}
+            ${{ matrix.service.image }}:latest
+
 
 
   smoke-test:
