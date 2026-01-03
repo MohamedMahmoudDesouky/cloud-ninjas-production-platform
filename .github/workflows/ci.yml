@@ -1,4 +1,4 @@
-name: Professional CI Pipeline (SonarCloud + Trivy + Smoke + CIS)
+ name: Professional CI Pipeline (SonarCloud + Trivy + Smoke + CIS)
 
 on:
   push:
@@ -111,7 +111,7 @@ jobs:
           sleep 5
 
           # اختبر
-          if curl -f http://localhost:8000; then
+          if curl -f http://localhost:8000/health; then
             echo "✅ Smoke test passed"
           else
             echo "❌ Smoke test failed"
