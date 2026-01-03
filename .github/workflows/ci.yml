@@ -83,7 +83,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
 
 
-
   smoke-test:
     needs: build-and-scan
     runs-on: ubuntu-latest
@@ -97,41 +96,31 @@ jobs:
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
           minikube start --driver=docker
-      - name: Smoke test
+          sudo sh -c 'echo "$(minikube ip) api.cloud-ninjas.example.com frontend.cloud-ninjas.example.com" >> /etc/hosts'
+      - name: Deploy and test
         run: |
           kubectl create namespace cloud-ninjas
-          kubectl apply -f k8s-final/
-          echo "Waiting for mysql-0 to start..."
-          kubectl wait pod/mysql-0 -n cloud-ninjas --for=condition=Ready --timeout=120s
-      
-          echo "Waiting for backend pods to start..."
-          kubectl wait pod -l app=backend -n cloud-ninjas --for=condition=Ready --timeout=120s
-      
-          echo "Running smoke test..."
-          cat <<EOF | kubectl apply -f -
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: smoke-test
-            namespace: cloud-ninjas
-          spec:
-            containers:
-            - name: curl
-              image: curlimages/curl
-              resources:
-                requests:
-                  cpu: "10m"
-                  memory: "16Mi"
-                limits:
-                  cpu: "50m"
-                  memory: "32Mi"
-              command: ["curl", "-f", "-s", "http://backend:80"]
-            restartPolicy: Never
-          EOF
-      
-          kubectl wait --for=condition=Succeeded pod/smoke-test -n cloud-ninjas --timeout=60s
-          kubectl logs smoke-test -n cloud-ninjas
-          kubectl delete pod smoke-test -n cloud-ninjas
+          kubectl apply -f k8s-final/ci-final/
+          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
+          MINIKUBE_IP=$(minikube ip)
+          # فتح port-forward في الخلفية
+          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
+          PORT_FORWARD_PID=$!
+
+          # انتظر قليلاً
+          sleep 5
+
+          # اختبر
+          if curl -f http://localhost:8000; then
+            echo "✅ Smoke test passed"
+          else
+            echo "❌ Smoke test failed"
+            kill $PORT_FORWARD_PID 2>/dev/null
+            exit 1
+          fi
+
+          # أنهِ port-forward
+          kill $PORT_FORWARD_PID 2>/dev/null
 
 
 
