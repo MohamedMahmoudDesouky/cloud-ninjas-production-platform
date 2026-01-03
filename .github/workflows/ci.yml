@@ -83,36 +83,36 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
 
 
-    smoke-test:
-      needs: build-and-scan
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v4
-    
-        - name: Install kubectl
-          uses: azure/setup-kubectl@v4
-    
-        - name: Start Minikube
-          run: |
-            sudo apt-get update && sudo apt-get install -y conntrack
-            curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-            sudo install minikube-linux-amd64 /usr/local/bin/minikube
-            minikube start --driver=docker
-    
-        - name: Deploy and test
-          run: |
-            kubectl create namespace cloud-ninjas || true
-            kubectl apply -f k8s-final/ci-final/
-    
-            kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
-    
-            kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
-            PORT_FORWARD_PID=$!
-            sleep 5
-    
-            curl -f http://localhost:8000/health
-    
-            kill $PORT_FORWARD_PID 2>/dev/null
+  smoke-test:
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+  
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+  
+      - name: Start Minikube
+        run: |
+          sudo apt-get update && sudo apt-get install -y conntrack
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=docker
+  
+      - name: Deploy and test
+        run: |
+          kubectl create namespace cloud-ninjas || true
+          kubectl apply -f k8s-final/ci-final/
+  
+          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
+  
+          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
+          PORT_FORWARD_PID=$!
+          sleep 5
+  
+          curl -f http://localhost:8000/health
+  
+          kill $PORT_FORWARD_PID 2>/dev/null
 
 
 
