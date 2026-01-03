@@ -102,25 +102,24 @@ jobs:
           kubectl create namespace cloud-ninjas
           kubectl apply -f k8s-final/
           kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
-          MINIKUBE_IP=$(minikube ip)
-          # فتح port-forward في الخلفية
-          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
-          PORT_FORWARD_PID=$!
-
-          # انتظر قليلاً
-          sleep 5
-
-          # اختبر
-          if curl -f http://localhost:8000; then
+    # تحقق من logs أولًا
+          echo "=== Backend logs ==="
+          kubectl logs -n cloud-ninjas -l app=backend --tail=20 || true
+      
+          # اختبر داخليًا باستخدام pod مؤقت
+          if kubectl run smoke-test \
+              --image=curlimages/curl \
+              -n cloud-ninjas \
+              -l app=frontend \
+              -i --rm --restart=Never -- \
+              curl -f http://backend:80; then
             echo "✅ Smoke test passed"
           else
             echo "❌ Smoke test failed"
-            kill $PORT_FORWARD_PID 2>/dev/null
+            kubectl get pods -n cloud-ninjas
+            kubectl describe pod -n cloud-ninjas -l app=backend
             exit 1
           fi
-
-          # أنهِ port-forward
-          kill $PORT_FORWARD_PID 2>/dev/null
 
   cis-benchmark:
     needs: smoke-test
