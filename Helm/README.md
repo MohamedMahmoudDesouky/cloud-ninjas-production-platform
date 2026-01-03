@@ -1,6 +1,7 @@
 # Cloud Ninjas Production Platform – Helm Chart
 
-<img width="1024" height="576" alt="image" src="https://github.com/user-attachments/assets/f5661e74-2f1b-43b9-8d46-9fcf74fe993e" />
+<img width="1024" height="378" alt="Helm-chart-structure-1024x576" src="https://github.com/user-attachments/assets/1c5b02da-65eb-416d-916b-3d3e7c9806a7" />
+
 
 
 This Helm chart deploys the full **Cloud Ninjas Production Platform** stack, including:
