@@ -85,7 +85,7 @@ The platform uses a **multi-stage GitHub Actions pipeline** defined in [`.github
 |---------|----------|------|-------|
 | **Frontend** | Nginx | 80 | `selconyt/fe:<tag>` |
 | **Backend** | FastAPI | 8000 | `selconyt/be:<tag>` |
-| **Database** | MySQL | 5432 | Official `postgres` image |
+| **Database** | MySQL | 5432 | Official `MySQL` image |
 
 > All images are built on every push and tagged with `GITHUB_RUN_NUMBER` for traceability.
 
@@ -109,7 +109,7 @@ While not fully implemented in this repo, the platform is **designed for observa
 - Metrics endpoints ready for Prometheus scraping
 - Tracing-ready (OpenTelemetry-compatible)
 
-> 🔜 Future: Integrate Prometheus, Grafana, Loki, and Tempo via Helm charts.
+> 🔜 Future: Integrate Prometheus, Grafana via Helm charts.
 
 ---
 
