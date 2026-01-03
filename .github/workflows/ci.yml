@@ -39,10 +39,10 @@ jobs:
       matrix:
         service:
           - name: backend
-            context: backend
+            context: docker/backend
             image: selconyt/be
           - name: frontend
-            context: frontend
+            context: docker/frontend
             image: selconyt/fe
 
     steps:
