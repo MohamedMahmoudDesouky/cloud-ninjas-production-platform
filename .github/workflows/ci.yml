@@ -102,10 +102,11 @@ jobs:
           kubectl create namespace cloud-ninjas
           kubectl apply -f k8s-final/
           kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
-    # تحقق من logs أولًا
+
+          # تحقق من logs أولًا
           echo "=== Backend logs ==="
           kubectl logs -n cloud-ninjas -l app=backend --tail=20 || true
-      
+
           # اختبر داخليًا باستخدام pod مؤقت
           if kubectl run smoke-test \
               --image=curlimages/curl \
