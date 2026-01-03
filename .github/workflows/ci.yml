@@ -75,7 +75,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
-          image-ref: ${{ matrix.service.image }}:${{ github.sha }}
+          tags: selconyt/backend:${{ github.run_number }}
 
       - name: Push image
         uses: docker/build-push-action@v6
@@ -150,7 +150,7 @@ jobs:
 
       - name: Update K8s Manifests
         run: |
-          cd k8s-final/
+          cd k8s-final
 
           sed -i "s|selconyt/backend:.*|selconyt/backend:${{ github.run_number }}|g" backend.yaml
           sed -i "s|selconyt/frontend:.*|selconyt/frontend:${{ github.run_number }}|g" frontend.yaml
