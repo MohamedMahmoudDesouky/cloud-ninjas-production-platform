@@ -111,7 +111,7 @@ jobs:
           sleep 5
 
           # اختبر
-          if curl -f http://MINIKUBE_IP:8387; then
+          if curl -f http://$MINIKUBE_IP:8387; then
             echo "✅ Smoke test passed"
           else
             echo "❌ Smoke test failed"
