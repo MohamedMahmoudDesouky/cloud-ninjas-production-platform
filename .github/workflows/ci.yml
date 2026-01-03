@@ -101,7 +101,7 @@ jobs:
         run: |
           kubectl create namespace cloud-ninjas
           kubectl apply -f k8s-final/
-          kubectl wait --for=condition=available deployment/backend --timeout=120s
+          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
           MINIKUBE_IP=$(minikube ip)
           if curl -f "http://$MINIKUBE_IP/health"; then
             echo "✅ Smoke test passed"
