@@ -104,14 +104,14 @@ jobs:
           kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
           MINIKUBE_IP=$(minikube ip)
           # فتح port-forward في الخلفية
-          kubectl port-forward svc/backend 8387:80 -n cloud-ninjas &
+          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
           PORT_FORWARD_PID=$!
 
           # انتظر قليلاً
           sleep 5
 
           # اختبر
-          if curl -f http://localhost:8387; then
+          if curl -f http://localhost:8000; then
             echo "✅ Smoke test passed"
           else
             echo "❌ Smoke test failed"
