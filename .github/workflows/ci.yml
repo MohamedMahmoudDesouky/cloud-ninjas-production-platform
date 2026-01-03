@@ -150,10 +150,10 @@ jobs:
 
       - name: Update K8s Manifests
         run: |
-          cd k8s
+          cd k8s-final/
 
           sed -i "s|selconyt/backend:.*|selconyt/backend:${{ github.run_number }}|g" backend.yaml
-
+          sed -i "s|selconyt/frontend:.*|selconyt/frontend:${{ github.run_number }}|g" frontend.yaml
           git config user.email "ci@github.com"
           git config user.name "github-actions"
           git add backend.yaml
