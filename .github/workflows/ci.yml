@@ -99,6 +99,8 @@ jobs:
           minikube start --driver=docker
       - name: Smoke test
         run: |
+          kubectl create namespace cloud-ninjas
+          kubectl apply -f k8s-final/
           echo "Waiting for mysql-0 to start..."
           kubectl wait pod/mysql-0 -n cloud-ninjas --for=condition=Ready --timeout=120s
       
