@@ -135,25 +135,26 @@ jobs:
         continue-on-error: true
 
 
-
   cd-argocd:
     needs: cis-benchmark
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write   # أهم سطر
+
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Update K8s Manifests
         run: |
-          git clone https://${{ secrets.GIT_USER }}:${{ secrets.GIT_TOKEN }}@github.com/MohamedMahmoudDesouky/cloud-ninjas-production-platform.git
-          cd cloud-ninjas-production-platform/k8s
+          cd k8s
 
           sed -i "s|selconyt/backend:.*|selconyt/backend:${{ github.run_number }}|g" backend.yaml
 
-          git config --global user.email "ci@github.com"
-          git config --global user.name "github-actions"
-          git add .
+          git config user.email "ci@github.com"
+          git config user.name "github-actions"
+          git add backend.yaml
           git commit -m "Update backend image to ${{ github.run_number }}"
           git push
+
 
