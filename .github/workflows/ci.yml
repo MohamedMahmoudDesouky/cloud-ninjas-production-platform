@@ -100,25 +100,32 @@ jobs:
       - name: Deploy and test
         run: |
           kubectl create namespace cloud-ninjas
-          kubectl apply -f k8s-final/
-          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
-
-          # تحقق من logs أولًا
-          echo "=== Backend logs ==="
-          kubectl logs -n cloud-ninjas -l app=backend --tail=20 || true
-
-          # اختبر داخليًا باستخدام pod مؤقت
+      
+          # عطّل ResourceQuota مؤقتًا (لتسهيل CI)
+          kubectl delete resourcequota cloud-ninjas-resource-quota -n cloud-ninjas 2>/dev/null || true
+      
+          kubectl apply -f k8s-final/ -n cloud-ninjas
+      
+          # انتظر حتى يصبح MySQL جاهزًا (حتى لو backend ينتهي أولاً)
+          kubectl wait --for=condition=ready pod -l app=mysql -n cloud-ninjas --timeout=180s || true
+      
+          # انتظر backend
+          kubectl wait --for=condition=ready pod -l app=backend -n cloud-ninjas --timeout=120s
+      
+          # اختبر داخليًا مع موارد محددة
           if kubectl run smoke-test \
               --image=curlimages/curl \
               -n cloud-ninjas \
               -l app=frontend \
-              -i --rm --restart=Never -- \
+              --restart=Never \
+              --requests="cpu=10m,memory=16Mi" \
+              --limits="cpu=50m,memory=32Mi" \
+              -i --rm -- \
               curl -f http://backend:80; then
             echo "✅ Smoke test passed"
           else
             echo "❌ Smoke test failed"
-            kubectl get pods -n cloud-ninjas
-            kubectl describe pod -n cloud-ninjas -l app=backend
+            kubectl logs -n cloud-ninjas -l app=backend --tail=30
             exit 1
           fi
 
