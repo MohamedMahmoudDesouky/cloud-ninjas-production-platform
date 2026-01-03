@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/MohamedMahmoudDesouky/cloud-ninjas-production-platform
     targetRevision: main
-    path: k8s
+    path: k8s-final
   destination:
     server: https://kubernetes.default.svc
     namespace: cloud-ninjas
