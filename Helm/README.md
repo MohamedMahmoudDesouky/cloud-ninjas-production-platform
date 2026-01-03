@@ -99,12 +99,6 @@ helm install cloud-ninjas . -f my-values.yaml -n cloud-ninjas
 
 ```
 
-### Component Roles:
-- **Frontend**: Serves static React app; communicates with backend over REST/HTTP.
-- **Backend**: Exposes RESTful API; handles business logic and connects to DB.
-- **Database**: PostgreSQL instance with persistent storage for data durability.
-
----
 
 ## 📝 Notes
 
