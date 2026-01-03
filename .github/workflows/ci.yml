@@ -136,28 +136,38 @@ jobs:
           sudo ./kube-bench run --targets node
         continue-on-error: true
 
-
   cd-argocd:
     needs: cis-benchmark
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write   # أهم سطر
-
+      contents: write  # ضروري علشان يقدر ي-push
+  
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # ← مهم جدًا: بيجلب كل الـ history
+  
       - name: Update K8s Manifests
         run: |
           cd k8s-final
-
+  
+          # Update image tags
           sed -i "s|selconyt/be:.*|selconyt/be:${{ github.run_number }}|g" backend.yaml
           sed -i "s|selconyt/fe:.*|selconyt/fe:${{ github.run_number }}|g" frontend.yaml
-
+  
+          # Configure Git
           git config user.email "ci@github.com"
           git config user.name "github-actions"
-          git add backend.yaml
-          git commit -m "Update backend image to ${{ github.run_number }}"
+  
+          # Stage & commit
+          git add backend.yaml frontend.yaml
+          git commit -m "Update images to ${{ github.run_number }}"
+  
+          # Pull latest changes (to avoid non-fast-forward)
+          git pull --rebase origin main
+  
+          # Push
           git push
 
 
