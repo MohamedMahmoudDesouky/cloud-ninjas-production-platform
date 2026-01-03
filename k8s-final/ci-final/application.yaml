@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloud-ninjas
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MohamedMahmoudDesouky/cloud-ninjas-production-platform
+    targetRevision: main
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cloud-ninjas
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
