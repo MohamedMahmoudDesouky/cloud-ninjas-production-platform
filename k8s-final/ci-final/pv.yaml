@@ -1,0 +1,15 @@
+# mysql-pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+  namespace: cloud-ninjas  # optional; PVs are cluster-scoped, but label for clarity
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain  # or Delete if you want auto-cleanup
+  storageClassName: ""  # matches PVC if you set storageClassName
+  hostPath:
+    path: /mnt/data/mysql  # ONLY for single-node clusters (e.g., Minikube)
