@@ -87,7 +87,6 @@ The platform uses a **multi-stage GitHub Actions pipeline** defined in [`.github
 | **Backend** | FastAPI | 8000 | `selconyt/be:<tag>` |
 | **Database** | MySQL | 5432 | Official `MySQL` image |
 
-> All images are built on every push and tagged with `GITHUB_RUN_NUMBER` for traceability.
 
 ---
 
@@ -140,12 +139,3 @@ minikube service frontend-service
    - Detects the Git change
    - Syncs the new manifests to the cluster
    - Ensures desired state = actual state
-
-
-
-
-
-
----
-
-> 💡 **Be a Cloud Ninja**: Secure by default. Observable by design. Automated end-to-end.
