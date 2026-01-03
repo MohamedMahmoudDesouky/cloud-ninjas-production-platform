@@ -13,6 +13,10 @@ spec:
       labels:
         app: backend
     spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z mysql 3306; do echo "Waiting for MySQL..."; sleep 2; done']
       containers:
       - name: backend
         image: selconyt/backend:v1.1  # تأكد من وجود cryptography
