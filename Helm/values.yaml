@@ -12,7 +12,7 @@ backend:
     maxReplicas: 5
     cpuUtilization: 70
     memoryUtilization: 75
-  replicas: 2
+  replicas: 4
   image:
     repository: selconyt/backend
     tag: v1.1
@@ -37,7 +37,7 @@ backend:
 
 # --- Frontend (new)
 frontend:
-  replicas: 1
+  replicas: 2
   containerPort: 8501
   servicePort: 80
   serviceType: ClusterIP  # or NodePort/LoadBalancer if needed later
@@ -82,7 +82,7 @@ mysql:
     pullPolicy: IfNotPresent
   resources:
     requests:
-      cpu: 250m
+      cpu: 3000m
       memory: 512Mi
     limits:
       cpu: 500m
@@ -198,7 +198,7 @@ redis:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 70m
       memory: 64Mi
     limits:
       cpu: 200m
