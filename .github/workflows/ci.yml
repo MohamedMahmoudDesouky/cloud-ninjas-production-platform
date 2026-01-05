@@ -132,22 +132,26 @@ jobs:
           minikube start --driver=docker --kubernetes-version=v1.29.6
 
   
-      - name: Run kube-bench CIS Benchmark (Report)
+      - name: Run kube-bench CIS Benchmark (Docker)
         run: |
-          VERSION=v0.14.1
-      
-          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench_${VERSION#v}_linux_amd64.tar.gz" | tar zx
-      
           mkdir -p reports
       
-          # JSON report (CI / Automation)
-          ./kube-bench \
-            --benchmark cis-1.29 \
-            --json > reports/kube-bench-report.json
+          docker run --rm \
+            --network host \
+            -v /var/lib:/var/lib \
+            -v /etc:/etc \
+            -v $(pwd)/reports:/reports \
+            aquasec/kube-bench:v0.14.1 \
+            run --benchmark cis-1.29 --json > reports/kube-bench-report.json
       
-          # Human-readable report
-          ./kube-bench \
-            --benchmark cis-1.29 > reports/kube-bench-report.txt
+          docker run --rm \
+            --network host \
+            -v /var/lib:/var/lib \
+            -v /etc:/etc \
+            -v $(pwd)/reports:/reports \
+            aquasec/kube-bench:v0.14.1 \
+            run --benchmark cis-1.29 > reports/kube-bench-report.txt
+
 
 
 
