@@ -132,25 +132,28 @@ jobs:
           minikube start --driver=docker --kubernetes-version=v1.29.6
 
   
-      - name: Run kube-bench CIS Benchmark (Docker)
+      - name: Run kube-bench CIS Benchmark (Docker - Stable)
         run: |
           mkdir -p reports
       
-          docker run --rm \
+          docker run --rm --privileged \
             --network host \
-            -v /var/lib:/var/lib \
+            -v $HOME/.kube:/root/.kube \
             -v /etc:/etc \
-            -v $(pwd)/reports:/reports \
+            -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.29 --json > reports/kube-bench-report.json
+            run --benchmark cis-1.29 --targets node --json \
+            > reports/kube-bench-report.json
       
-          docker run --rm \
+          docker run --rm --privileged \
             --network host \
-            -v /var/lib:/var/lib \
+            -v $HOME/.kube:/root/.kube \
             -v /etc:/etc \
-            -v $(pwd)/reports:/reports \
+            -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.29 > reports/kube-bench-report.txt
+            run --benchmark cis-1.29 --targets node \
+            > reports/kube-bench-report.txt
+
 
 
 
