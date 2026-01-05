@@ -149,33 +149,30 @@ jobs:
         run: mkdir -p reports
 
       # 4️⃣ Run kube-bench (Docker)
+      # 4️⃣ Run kube-bench (Docker)
       - name: Run kube-bench CIS Benchmark
         run: |
-          docker run --rm --privileged \
-            --network host \
-            -v $HOME/.kube:/root/.kube \
-            -v /etc:/etc \
-            -v /var/lib:/var/lib \
-            aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.23 --json \
-            > reports/kube-bench-report.json
+          mkdir -p reports
 
           docker run --rm --privileged \
             --network host \
-            -v $HOME/.kube:/root/.kube \
-            -v /etc:/etc \
-            -v /var/lib:/var/lib \
+            -v $HOME/.kube:/root/.kube:ro \
+            -v /etc:/etc:ro \
+            -v /var/lib:/var/lib:ro \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.23 \
-            > reports/kube-bench-report.txt
+            run --benchmark cis-1.23 --version 1.29 --json > reports/kube-bench.json
 
-      # 5️⃣ Upload reports as artifacts
-      - name: Upload kube-bench reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: kube-bench-reports
-          path: reports/
-  
+          docker run --rm --privileged \
+            --network host \
+            -v $HOME/.kube:/root/.kube:ro \
+            -v /etc:/etc:ro \
+            -v /var/lib:/var/lib:ro \
+            aquasec/kube-bench:v0.14.1 \
+            run --benchmark cis-1.23 --version 1.29 > reports/kube-bench.txt
+
+          echo "✅ التقارير محفوظة في مجلد reports/"
+          ls -l reports/
+            
 
 
 
