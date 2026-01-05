@@ -132,9 +132,14 @@ jobs:
           minikube start --driver=docker
       - name: Run kube-bench
         run: |
-          URL="https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_$(uname -s)_$(uname -m).tar.gz"
-          echo "Downloading kube-bench from: $URL"
-          curl -L "$URL" | tar zx
+          # Get the latest version tag
+          VERSION=$(curl -s https://api.github.com/repos/aquasecurity/kube-bench/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Latest kube-bench version: $VERSION"
+      
+          # Download the Linux AMD64 binary (statically linked)
+          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench_${VERSION#v}_linux_amd64.tar.gz" | tar zx
+      
+          # Run
           sudo ./kube-bench run --targets node
         continue-on-error: true
 #   cd-argocd:
