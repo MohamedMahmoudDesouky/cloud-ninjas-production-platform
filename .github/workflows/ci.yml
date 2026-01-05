@@ -130,21 +130,22 @@ jobs:
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
           minikube start --driver=docker
-      - name: Run kube-bench
+
+      - name: Run kube-bench CIS Benchmark
         run: |
-          # Get latest version
           VERSION=$(curl -s https://api.github.com/repos/aquasecurity/kube-bench/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-          echo "Latest kube-bench version: $VERSION"
-      
-          # Download FULL source (includes cfg/)
+          echo "Using kube-bench version: $VERSION"
+          
+          # Download full source with configs
           curl -L "https://github.com/aquasecurity/kube-bench/archive/refs/tags/${VERSION}.tar.gz" | tar zx
           cd "kube-bench-${VERSION#v}"
       
-          # Ensure kubectl context is set (minikube should've done this)
+          # Verify kubectl context
           kubectl cluster-info
+          kubectl get nodes
       
-          # Run with explicit config directory
-          sudo ./kube-bench run --config-dir ./cfg --targets node
+          # Run the benchmark
+          sudo ./kube-bench run --config-dir ./cfg --targets node --benchmark cis-1.23  # أو أحدث إصدار مدعوم
         continue-on-error: true
 #   cd-argocd:
 #     needs: cis-benchmark
