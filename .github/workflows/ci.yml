@@ -123,18 +123,34 @@ jobs:
   cis-benchmark:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Checkout code (مهم لو في أي ملفات configs أو scripts)
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Install dependencies & Minikube
       - name: Install kubectl & Minikube
         run: |
           sudo apt-get update
-          sudo apt-get install -y conntrack
+          sudo apt-get install -y conntrack curl
+          
+          # تثبيت Minikube
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+          # Start Minikube
           minikube start --driver=docker --kubernetes-version=v1.29.6
-  
-      - name: Run kube-bench CIS Benchmark (Stable Docker)
+
+          # Optional: تحقق من cluster
+          minikube status
+          minikube kubectl -- get nodes
+
+      # 3️⃣ Create reports folder
+      - name: Create reports folder
+        run: mkdir -p reports
+
+      # 4️⃣ Run kube-bench (Docker)
+      - name: Run kube-bench CIS Benchmark
         run: |
-          mkdir -p reports
-      
           docker run --rm --privileged \
             --network host \
             -v $HOME/.kube:/root/.kube \
@@ -143,7 +159,7 @@ jobs:
             aquasec/kube-bench:v0.14.1 \
             run --benchmark cis-1.29 --json \
             > reports/kube-bench-report.json
-      
+
           docker run --rm --privileged \
             --network host \
             -v $HOME/.kube:/root/.kube \
@@ -151,7 +167,14 @@ jobs:
             -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
             run --benchmark cis-1.29 \
-            > reports/kube-bench
+            > reports/kube-bench-report.txt
+
+      # 5️⃣ Upload reports as artifacts
+      - name: Upload kube-bench reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: kube-bench-reports
+          path: reports/
   
 
 
