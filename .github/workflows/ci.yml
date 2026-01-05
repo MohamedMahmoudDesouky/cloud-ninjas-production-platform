@@ -132,15 +132,19 @@ jobs:
           minikube start --driver=docker
       - name: Run kube-bench
         run: |
-          # Get the latest version tag
+          # Get latest version
           VERSION=$(curl -s https://api.github.com/repos/aquasecurity/kube-bench/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
           echo "Latest kube-bench version: $VERSION"
       
-          # Download the Linux AMD64 binary (statically linked)
-          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench_${VERSION#v}_linux_amd64.tar.gz" | tar zx
+          # Download FULL source (includes cfg/)
+          curl -L "https://github.com/aquasecurity/kube-bench/archive/refs/tags/${VERSION}.tar.gz" | tar zx
+          cd "kube-bench-${VERSION#v}"
       
-          # Run
-          sudo ./kube-bench run --targets node
+          # Ensure kubectl context is set (minikube should've done this)
+          kubectl cluster-info
+      
+          # Run with explicit config directory
+          sudo ./kube-bench run --config-dir ./cfg --targets node
         continue-on-error: true
 #   cd-argocd:
 #     needs: cis-benchmark
