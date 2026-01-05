@@ -6,117 +6,117 @@ on:
   pull_request:
     branches: [ main ]
 
-# env:
-#   REGISTRY: docker.io
+env:
+  REGISTRY: docker.io
 
 
 jobs:
-#   sonarcloud-scan:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0  # Required for SonarCloud to compute blame correctly
+  sonarcloud-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for SonarCloud to compute blame correctly
 
-#       - name: Set up Python
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-#       - name: Install dependencies (optional, for accurate Python analysis)
-#         run: |
-#           pip install -r requirements.txt
+      - name: Install dependencies (optional, for accurate Python analysis)
+        run: |
+          pip install -r requirements.txt
 
-#       - name: Run SonarCloud Scan
-#         uses: sonarsource/sonarcloud-github-action@master
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to fetch PR metadata
-#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Run SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to fetch PR metadata
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-#   build-and-scan:
-#     runs-on: ubuntu-latest
-#     strategy:
-#       matrix:
-#         service:
-#           - name: backend
-#             context: docker/backend
-#             image: selconyt/be
-#           - name: frontend
-#             context: docker/frontend
-#             image: selconyt/fe
+  build-and-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            context: docker/backend
+            image: selconyt/be
+          - name: frontend
+            context: docker/frontend
+            image: selconyt/fe
 
-#     steps:
-#       - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-#       - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-#       - name: Login to Docker Hub
-#         uses: docker/login-action@v3
-#         with:
-#           username: ${{ secrets.DOCKERHUB_USERNAME }}
-#           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-#       - name: Extract Docker metadata
-#         id: meta
-#         uses: docker/metadata-action@v5
-#         with:
-#           images: ${{ matrix.service.image }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.service.image }}
 
-#       - name: Build image
-#         uses: docker/build-push-action@v6
-#         with:
-#           context: ${{ matrix.service.context }}
-#           load: true
-#           tags: ${{ matrix.service.image }}:${{ github.run_number }}
-
-
-
-#       - name: Trivy Scan
-#         uses: aquasecurity/trivy-action@master
-#         continue-on-error: true
-#         with:
-#           image-ref: ${{ matrix.service.image }}:${{ github.run_number }}
-
-#       - name: Push image
-#         uses: docker/build-push-action@v6
-#         with:
-#           context: ${{ matrix.service.context }}
-#           push: true
-#           tags: |
-#             ${{ matrix.service.image }}:${{ github.run_number }}
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          load: true
+          tags: ${{ matrix.service.image }}:${{ github.run_number }}
 
 
 
-#   smoke-test:
-#     needs: build-and-scan
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: ${{ matrix.service.image }}:${{ github.run_number }}
+
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          push: true
+          tags: |
+            ${{ matrix.service.image }}:${{ github.run_number }}
+
+
+
+  smoke-test:
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
   
-#       - name: Install kubectl
-#         uses: azure/setup-kubectl@v4
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
   
-#       - name: Start Minikube
-#         run: |
-#           sudo apt-get update && sudo apt-get install -y conntrack
-#           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-#           sudo install minikube-linux-amd64 /usr/local/bin/minikube
-#           minikube start --driver=docker
+      - name: Start Minikube
+        run: |
+          sudo apt-get update && sudo apt-get install -y conntrack
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=docker
   
-#       - name: Deploy and test
-#         run: |
-#           kubectl create namespace cloud-ninjas || true
-#           kubectl apply -f k8s-final/ci-final/
+      - name: Deploy and test
+        run: |
+          kubectl create namespace cloud-ninjas || true
+          kubectl apply -f k8s-final/ci-final/
   
-#           kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
+          kubectl wait --for=condition=available deployment/backend -n cloud-ninjas --timeout=120s
   
-#           kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
-#           PORT_FORWARD_PID=$!
-#           sleep 5
+          kubectl port-forward svc/backend 8000:80 -n cloud-ninjas &
+          PORT_FORWARD_PID=$!
+          sleep 5
   
-#           curl -f http://localhost:8000/health
+          curl -f http://localhost:8000/health
   
-#           kill $PORT_FORWARD_PID 2>/dev/null
+          kill $PORT_FORWARD_PID 2>/dev/null
 
 
 
@@ -149,31 +149,32 @@ jobs:
         run: mkdir -p reports
 
       # 4️⃣ Run kube-bench (Docker)
-      # 4️⃣ Run kube-bench (Docker)
-      # 4️⃣ Install & Run kube-bench (CLI, no Docker)
-      - name: Install and run kube-bench (native)
+      - name: Run kube-bench CIS Benchmark
         run: |
-          # 1. تنزيل الأرشيف الكامل (binary + cfg/)
-          VERSION=v0.14.1
-          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench.tar.gz" -o kube-bench.tar.gz
-          tar zxvf kube-bench.tar.gz
+          docker run --rm --privileged \
+            --network host \
+            -v $HOME/.kube:/root/.kube \
+            -v /etc:/etc \
+            -v /var/lib:/var/lib \
+            aquasec/kube-bench:v0.14.1 \
+            run --benchmark cis-1.23 --json \
+            > reports/kube-bench-report.json
 
-          # الآن: ./kube-bench و ./cfg/ متاحان
+          docker run --rm --privileged \
+            --network host \
+            -v $HOME/.kube:/root/.kube \
+            -v /etc:/etc \
+            -v /var/lib:/var/lib \
+            aquasec/kube-bench:v0.14.1 \
+            run --benchmark cis-1.23 \
+            > reports/kube-bench-report.txt
 
-          # 2. تأكد أن kubectl جاهز
-          kubectl cluster-info
-          kubectl get nodes
-
-          # 3. شغّل kube-bench (كـ root مطلوب لقراءة ملفات النظام)
-          sudo ./kube-bench run --config-dir ./cfg --benchmark cis-1.23 --version 1.29 --json > kube-bench.json
-          sudo ./kube-bench run --config-dir ./cfg --benchmark cis-1.23 --version 1.29 > kube-bench.txt
-
-          # 4. انقل التقارير لمجلد reports
-          mkdir -p reports
-          mv kube-bench.json kube-bench.txt reports/
-
-          echo "✅ التقارير محفوظة في reports/"
-          ls -l reports/
+      # 5️⃣ Upload reports as artifacts
+      - name: Upload kube-bench reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: kube-bench-reports
+          path: reports/
             
 
 
@@ -181,38 +182,38 @@ jobs:
 
 
 
-#   cd-argocd:
-#     needs: cis-benchmark
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: write  # ضروري علشان يقدر ي-push
+  cd-argocd:
+    needs: cis-benchmark
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # ضروري علشان يقدر ي-push
   
-#     steps:
-#       - uses: actions/checkout@v4
-#         with:
-#           token: ${{ secrets.GITHUB_TOKEN }}
-#           fetch-depth: 0  # ← مهم جدًا: بيجلب كل الـ history
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # ← مهم جدًا: بيجلب كل الـ history
   
-#       - name: Update K8s Manifests
-#         run: |
-#           cd k8s-final
+      - name: Update K8s Manifests
+        run: |
+          cd k8s-final
   
-#           # Update image tags
-#           sed -i "s|selconyt/be:.*|selconyt/be:${{ github.run_number }}|g" backend.yaml
-#           sed -i "s|selconyt/fe:.*|selconyt/fe:${{ github.run_number }}|g" frontend.yaml
+          # Update image tags
+          sed -i "s|selconyt/be:.*|selconyt/be:${{ github.run_number }}|g" backend.yaml
+          sed -i "s|selconyt/fe:.*|selconyt/fe:${{ github.run_number }}|g" frontend.yaml
   
-#           # Configure Git
-#           git config user.email "ci@github.com"
-#           git config user.name "github-actions"
+          # Configure Git
+          git config user.email "ci@github.com"
+          git config user.name "github-actions"
   
-#           # Stage & commit
-#           git add backend.yaml frontend.yaml
-#           git commit -m "Update images to ${{ github.run_number }}"
+          # Stage & commit
+          git add backend.yaml frontend.yaml
+          git commit -m "Update images to ${{ github.run_number }}"
   
-#           # Pull latest changes (to avoid non-fast-forward)
-#           git pull --rebase origin main
+          # Pull latest changes (to avoid non-fast-forward)
+          git pull --rebase origin main
   
-#           # Push
-#           git push
+          # Push
+          git push
 
 
