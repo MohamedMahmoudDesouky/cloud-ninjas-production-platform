@@ -157,7 +157,7 @@ jobs:
             -v /etc:/etc \
             -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.29 --json \
+            run --benchmark cis-1.23 --json \
             > reports/kube-bench-report.json
 
           docker run --rm --privileged \
@@ -166,7 +166,7 @@ jobs:
             -v /etc:/etc \
             -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.29 \
+            run --benchmark cis-1.23 \
             > reports/kube-bench-report.txt
 
       # 5️⃣ Upload reports as artifacts
