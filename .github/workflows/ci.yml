@@ -130,8 +130,8 @@ jobs:
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
           minikube start --driver=docker --kubernetes-version=v1.29.6
-
-      - name: Run kube-bench CIS Benchmark (Docker - FINAL)
+  
+      - name: Run kube-bench CIS Benchmark (Stable Docker)
         run: |
           mkdir -p reports
       
@@ -151,7 +151,8 @@ jobs:
             -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
             run --benchmark cis-1.29 \
-            > reports/kube-bench-report.txt
+            > reports/kube-bench
+  
 
 
 
