@@ -121,6 +121,7 @@ jobs:
 
 
   cis-benchmark:
+    needs: smoke-test
     runs-on: ubuntu-latest
     steps:
       # 1️⃣ Checkout code (مهم لو في أي ملفات configs أو scripts)
