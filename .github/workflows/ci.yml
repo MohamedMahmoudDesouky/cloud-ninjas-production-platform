@@ -131,8 +131,7 @@ jobs:
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
           minikube start --driver=docker --kubernetes-version=v1.29.6
 
-  
-      - name: Run kube-bench CIS Benchmark (Docker - Stable)
+      - name: Run kube-bench CIS Benchmark (Docker - FINAL)
         run: |
           mkdir -p reports
       
@@ -142,7 +141,7 @@ jobs:
             -v /etc:/etc \
             -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.29 --targets node --json \
+            run --benchmark cis-1.29 --json \
             > reports/kube-bench-report.json
       
           docker run --rm --privileged \
@@ -151,8 +150,9 @@ jobs:
             -v /etc:/etc \
             -v /var/lib:/var/lib \
             aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.29 --targets node \
+            run --benchmark cis-1.29 \
             > reports/kube-bench-report.txt
+
 
 
 
