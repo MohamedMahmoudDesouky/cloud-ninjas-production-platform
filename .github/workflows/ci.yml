@@ -150,27 +150,29 @@ jobs:
 
       # 4️⃣ Run kube-bench (Docker)
       # 4️⃣ Run kube-bench (Docker)
-      - name: Run kube-bench CIS Benchmark
+      # 4️⃣ Install & Run kube-bench (CLI, no Docker)
+      - name: Install and run kube-bench (native)
         run: |
+          # 1. تنزيل الأرشيف الكامل (binary + cfg/)
+          VERSION=v0.14.1
+          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench.tar.gz" -o kube-bench.tar.gz
+          tar zxvf kube-bench.tar.gz
+
+          # الآن: ./kube-bench و ./cfg/ متاحان
+
+          # 2. تأكد أن kubectl جاهز
+          kubectl cluster-info
+          kubectl get nodes
+
+          # 3. شغّل kube-bench (كـ root مطلوب لقراءة ملفات النظام)
+          sudo ./kube-bench run --config-dir ./cfg --benchmark cis-1.23 --version 1.29 --json > kube-bench.json
+          sudo ./kube-bench run --config-dir ./cfg --benchmark cis-1.23 --version 1.29 > kube-bench.txt
+
+          # 4. انقل التقارير لمجلد reports
           mkdir -p reports
+          mv kube-bench.json kube-bench.txt reports/
 
-          docker run --rm --privileged \
-            --network host \
-            -v $HOME/.kube:/root/.kube:ro \
-            -v /etc:/etc:ro \
-            -v /var/lib:/var/lib:ro \
-            aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.23 --version 1.29 --json > reports/kube-bench.json
-
-          docker run --rm --privileged \
-            --network host \
-            -v $HOME/.kube:/root/.kube:ro \
-            -v /etc:/etc:ro \
-            -v /var/lib:/var/lib:ro \
-            aquasec/kube-bench:v0.14.1 \
-            run --benchmark cis-1.23 --version 1.29 > reports/kube-bench.txt
-
-          echo "✅ التقارير محفوظة في مجلد reports/"
+          echo "✅ التقارير محفوظة في reports/"
           ls -l reports/
             
 
