@@ -140,16 +140,15 @@ jobs:
       
           mkdir -p reports
       
-          # Report للـ automation
-          ./kube-bench run \
+          # JSON report (CI / Automation)
+          ./kube-bench \
             --benchmark cis-1.29 \
-            --targets node \
             --json > reports/kube-bench-report.json
       
-          # Report readable للبشر
-          ./kube-bench run \
-            --benchmark cis-1.29 \
-            --targets node > reports/kube-bench-report.txt
+          # Human-readable report
+          ./kube-bench \
+            --benchmark cis-1.29 > reports/kube-bench-report.txt
+
 
 
 #   cd-argocd:
