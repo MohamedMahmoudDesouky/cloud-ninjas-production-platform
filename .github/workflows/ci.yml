@@ -121,34 +121,30 @@ jobs:
 
 
   cis-benchmark:
-    # needs: smoke-test
     runs-on: ubuntu-latest
     steps:
       - name: Install kubectl & Minikube
         run: |
-          sudo apt-get update && sudo apt-get install -y conntrack
+          sudo apt-get update
+          sudo apt-get install -y conntrack
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
           sudo install minikube-linux-amd64 /usr/local/bin/minikube
           minikube start --driver=docker
-
+  
       - name: Run kube-bench CIS Benchmark
         run: |
-          VERSION=v0.14.1  # أو استخدم API كما فعلت — لكن دعنا نستخدمه مباشرةً لتجنب أخطاء parsing
-          
-          # 1. تنزيل الباينري الجاهز
+          VERSION=v0.14.1
+  
+          # 1. تنزيل وفك kube-bench (يشمل configs)
           curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench_${VERSION#v}_linux_amd64.tar.gz" | tar zx
-          
-          # 2. تنزيل ملفات الإعدادات (الـ configs)
-          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench-cfg-${VERSION#v}.zip" -o cfg.zip
-          unzip cfg.zip
-      
-          # 3. تحقق من kubectl
+  
+          # 2. تحقق من الكلاستر
           kubectl cluster-info
           kubectl get nodes
-      
-          # 4. شغّل kube-bench مع تحديد مجلد الإعدادات
-          ./kube-bench run --config-dir ./cfg --targets node
-        continue-on-error: false
+  
+          # 3. تشغيل CIS Benchmark
+          ./kube-bench run --targets node
+
 #   cd-argocd:
 #     needs: cis-benchmark
 #     runs-on: ubuntu-latest
