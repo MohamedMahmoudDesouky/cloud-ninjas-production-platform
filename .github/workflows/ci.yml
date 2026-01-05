@@ -133,20 +133,22 @@ jobs:
 
       - name: Run kube-bench CIS Benchmark
         run: |
-          VERSION=$(curl -s https://api.github.com/repos/aquasecurity/kube-bench/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-          echo "Using kube-bench version: $VERSION"
+          VERSION=v0.14.1  # أو استخدم API كما فعلت — لكن دعنا نستخدمه مباشرةً لتجنب أخطاء parsing
           
-          # Download full source with configs
-          curl -L "https://github.com/aquasecurity/kube-bench/archive/refs/tags/${VERSION}.tar.gz" | tar zx
-          cd "kube-bench-${VERSION#v}"
+          # 1. تنزيل الباينري الجاهز
+          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench_${VERSION#v}_linux_amd64.tar.gz" | tar zx
+          
+          # 2. تنزيل ملفات الإعدادات (الـ configs)
+          curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench-cfg-${VERSION#v}.zip" -o cfg.zip
+          unzip cfg.zip
       
-          # Verify kubectl context
+          # 3. تحقق من kubectl
           kubectl cluster-info
           kubectl get nodes
       
-          # Run the benchmark
-          sudo ./kube-bench run --config-dir ./cfg --targets node --benchmark cis-1.23  # أو أحدث إصدار مدعوم
-        continue-on-error: true
+          # 4. شغّل kube-bench مع تحديد مجلد الإعدادات
+          ./kube-bench run --config-dir ./cfg --targets node
+        continue-on-error: false
 #   cd-argocd:
 #     needs: cis-benchmark
 #     runs-on: ubuntu-latest
