@@ -132,19 +132,25 @@ jobs:
           minikube start --driver=docker --kubernetes-version=v1.29.6
 
   
-      - name: Run kube-bench CIS Benchmark
+      - name: Run kube-bench CIS Benchmark (Report)
         run: |
           VERSION=v0.14.1
-  
-          # 1. تنزيل وفك kube-bench (يشمل configs)
+      
           curl -L "https://github.com/aquasecurity/kube-bench/releases/download/${VERSION}/kube-bench_${VERSION#v}_linux_amd64.tar.gz" | tar zx
-  
-          # 2. تحقق من الكلاستر
-          kubectl cluster-info
-          kubectl get nodes
-  
-          # 3. تشغيل CIS Benchmark
-          ./kube-bench run --targets node
+      
+          mkdir -p reports
+      
+          # Report للـ automation
+          ./kube-bench run \
+            --benchmark cis-1.29 \
+            --targets node \
+            --json > reports/kube-bench-report.json
+      
+          # Report readable للبشر
+          ./kube-bench run \
+            --benchmark cis-1.29 \
+            --targets node > reports/kube-bench-report.txt
+
 
 #   cd-argocd:
 #     needs: cis-benchmark
