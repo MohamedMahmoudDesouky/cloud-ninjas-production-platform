@@ -14,7 +14,7 @@ spec:
         app: frontend
     spec:
       containers:
-      - image: selconyt/fe:110
+      - image: selconyt/fe:128
         resources:
           requests:
             cpu: 250m
