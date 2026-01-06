@@ -34,13 +34,14 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Fetch SonarCloud Metrics via API
+        if: always()
         run: |
           curl -s -u ${{ secrets.SONAR_TOKEN }}: \
             "https://sonarcloud.io/api/measures/component?component=MohamedMahmoudDesouky_cloud-ninjas-production-platform&metricKeys=bugs,vulnerabilities,code_smells,coverage,security_rating" \
             | jq '.' > sonar-report.json
 
           echo "✅ SonarCloud report saved to sonar-report.json"
-          if: always()
+
       
       - name: Upload Report as Artifact
         uses: actions/upload-artifact@v4
