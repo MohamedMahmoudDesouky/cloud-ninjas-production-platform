@@ -19,7 +19,7 @@ spec:
         command: ['sh', '-c', 'until nc -z mysql 3306; do echo "Waiting for MySQL..."; sleep 2; done']
       containers:
       - name: backend
-        image: selconyt/be:129
+        image: selconyt/be:132
         resources:
           requests:
             cpu: 250m
