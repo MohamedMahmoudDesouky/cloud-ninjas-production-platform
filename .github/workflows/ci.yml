@@ -9,8 +9,19 @@ on:
 env:
   REGISTRY: docker.io
 
-
 jobs:
+  approval-gate:
+    if: (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    environment: 
+      name: production  # ← هذا يفعّل الـ approval!
+    steps:
+      - name: Wait for manual approval
+        run: |
+          echo "✅ Accepted Approval ."
+          echo "time: $(date)"
+
+          
   sonarcloud-scan:
     runs-on: ubuntu-latest
     steps:
